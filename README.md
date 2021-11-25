@@ -2,7 +2,7 @@
 
 ## コロナ社「入門　機械学習による異常検知」
 
-自身の学習のため、本書掲載のRスクリプトを写経し、内容を確認した。
+本書掲載のRスクリプトを写経し、内容を確認した。
 
 [ホテリングT2法（1次元）を用いた異常検知](https://github.com/akiabe/MLAnomalyDetection/blob/main/2-3_1D-normal.R)
 
