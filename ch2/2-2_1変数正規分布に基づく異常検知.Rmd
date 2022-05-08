@@ -1,0 +1,67 @@
+---
+title: "2-2 1変数正規分布に基づく異常検知"
+output:
+  html_document:
+    df_print: paged
+---
+## パッケージの読込み
+```{r}
+library(car)
+library(tidyverse)
+```
+
+## データの読込み
+```{r}
+data("Davis")
+Davis
+```
+
+## Davisデータに含まれる体重の分布を可視化
+```{r}
+ggplot(data = Davis, mapping = aes(x = weight)) +
+  geom_histogram()
+```
+
+## ホテリングT2法（1次元）
+### ステップ1 分布の推定
+標本平均と標本分散を求める。
+```{r}
+mu <- mean(Davis$weight)
+sigma2 <- mean((Davis$weight-mu)^2)
+mu; sigma2
+```
+
+### ステップ2 異常度の計算
+新たな観測値$x'$が得られるたびに、異常度$a$を計算する。
+$$
+  a(x') = (\frac{x' -\hat \mu}{\hat \sigma})^2
+$$
+```{r}
+a <- (Davis$weight-mu)^2/sigma2
+a
+```
+
+### ステップ3 閾値判定
+閾値$a_{th}$を自由度1、1%水準のカイ二乗分布から求め、異常度が閾値$a_{th}$を超えたら異常と判定する。
+```{r}
+th <- qchisq(0.99,1)
+th
+```
+
+## Davisデータの体重に関する異常度を可視化
+```{r}
+d <- tibble(
+  n = 1:length(a),
+  a = a
+)
+
+ggplot(data = d, mapping = aes(x = n, y = a)) +
+  geom_point(shape = 1, size = 2) +
+  theme_gray(base_family = "HiraginoSans-W3") +
+  labs(x = "標本番号", y = "異常度") +
+  geom_hline(yintercept = th, linetype = "dashed", col = "red") +
+  geom_text(mapping = aes(label = n), hjust = 0)
+```
+
+12番目の観測値の異常度が突出して高くなっていることが分かった。
+
