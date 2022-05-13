@@ -1,0 +1,74 @@
+---
+title: "2-4_多変量正規分布に基づく異常検知"
+output: html_document
+date: '2022-05-09'
+---
+## パッケージの読込み
+```{r}
+library(car)
+library(tidyverse)
+```
+
+## データの読込み
+```{r}
+data("Davis")
+Davis
+```
+
+## Davisデータの体重と身長に関する散布図
+```{r}
+ggplot(data = Davis, mapping = aes(x = weight, y = height)) +
+  geom_point(shape = 1, size = 2) +
+  labs(x = "weight", y = "hieght")
+```
+
+## ホテリングT2法（多次元）
+### ステップ1 分布の推定
+多変量正規分布の未知パラメータである平均ベクトル$\boldsymbol{\mu}$と共分散行列$\boldsymbol{\Sigma}$をデータから最尤推定で求める。
+$$
+  \boldsymbol{\hat \mu} = \frac{1}{N} \sum_{n=1}^N \boldsymbol{x}^n \\
+  \boldsymbol{\hat \Sigma} = \frac{1}{N} \sum_{n=1}^N (\boldsymbol{x}^n - \boldsymbol{\hat \mu})(\boldsymbol{x}^n - \boldsymbol{\hat \mu})^\top
+$$
+```{r}
+X <- cbind(Davis$weight, Davis$height)
+mu_hat <- colMeans(X)
+tmp <- X - matrix(1, nrow(X), 1) %*% mu_hat
+sigma_hat <- t(tmp) %*% tmp / nrow(X)
+mu_hat; sigma_hat
+```
+
+### ステップ2 異常度の計算
+新たな観測値$x'$が得られるたびに、異常度$a$を計算する。
+$$
+  a(\boldsymbol{x'}) = (\boldsymbol{x}^n - \boldsymbol{\hat \mu})^\top \Sigma^{-1} (\boldsymbol{x}^n - \boldsymbol{\hat \mu})
+$$
+```{r}
+a <- colSums(t(tmp) * solve(sigma_hat, t(tmp)))
+a
+```
+
+### ステップ3 閾値判定
+閾値$a_{th}$は、標本数$N$が変数の数$M$より大きければ、自由度$M$、スケール因子1のカイ二乗分布から求め、異常度が閾値$a_{th}$を超えたら異常と判定する。
+```{r}
+th <- qchisq(0.99, 2)
+th
+```
+
+## Davisデータの体重に関する異常度を可視化
+```{r}
+d <- tibble(
+  n = 1:length(a),
+  a = a
+)
+
+ggplot(data = d, mapping = aes(x = n, y = a)) +
+  geom_point(shape = 1, size = 2) +
+  theme_gray(base_family = "HiraginoSans-W3") +
+  labs(x = "標本番号", y = "異常度") +
+  geom_hline(yintercept = th, linetype = "dashed", col = "red") +
+  geom_text(mapping = aes(label = n), hjust = 0)
+```
+
+12番目の観測値の異常度が突出して高くなっていることが分かった。
+
+
